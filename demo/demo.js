@@ -1,4 +1,5 @@
-import {basicSetup, EditorView} from "codemirror"
+import {minimalSetup, EditorView} from "codemirror"
+import {lineNumbers} from "@codemirror/view"
 import {gitConflicts} from "../dist/index.js"
 import {javascript} from "@codemirror/lang-javascript"
 
@@ -19,7 +20,7 @@ Matthew Thomas Carter
 Olivia Rose Bennett
 
 <<<<<<< HEAD
-new version
+new version with a very very veeeeeeeeeeeeeeery super looooooooooooooooooooooooong line in it .....
 "of"
 the
 content
@@ -31,7 +32,8 @@ here
 end
 `,
   extensions: [
-    basicSetup,
+    minimalSetup,
+    lineNumbers(),
     javascript(),
     gitConflicts()
   ],

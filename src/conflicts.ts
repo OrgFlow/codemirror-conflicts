@@ -1,9 +1,8 @@
 import {EditorState, Text, StateField, Range, Extension} from "@codemirror/state"
-import {EditorView, Decoration, DecorationSet, WidgetType} from "@codemirror/view"
+import {EditorView, Decoration, DecorationSet, WidgetType, GutterMarker, lineNumberWidgetMarker} from "@codemirror/view"
 import {language, highlightingFor} from "@codemirror/language"
-import {Parser} from "@lezer/common"
 import {highlightTree} from "@lezer/highlight"
-import {presentableDiff, Change} from "@codemirror/merge"
+import {presentableDiff} from "@codemirror/merge"
 import elt from "crelt"
 
 const conflicts = StateField.define<DecorationSet>({
@@ -16,7 +15,8 @@ const conflicts = StateField.define<DecorationSet>({
           if (cFrom < to && cTo > from) del.push(cFrom)
         })
       })
-      if (del.length) conflicts = conflicts.update({filter: from => del.indexOf(from) == -1})
+      if (del.length)
+        conflicts = conflicts.update({filter: from => del.indexOf(from) == -1})
       conflicts = conflicts.map(tr.changes)
     }
     return conflicts
@@ -51,12 +51,14 @@ class ConflictWidget extends WidgetType {
   }
 
   renderSide(tag: string, side: ConflictSide, inserted: [number, number][], view: EditorView) {
+    let label = view.state.phrase(tag == "ours" ? "Ours" : tag == "base" ? "Original" : "Theirs")
     return elt("div", {class: "cm-git-conflict-side cm-git-conflict-" + tag},
                elt("div", {class: "cm-git-conflict-top"},
-                   elt("strong", view.state.phrase(tag)), " · ", maybeAbbrev(side.label), " · ",
+                   elt("strong", label), " · ", maybeAbbrev(side.label), " · ",
                    elt("button", {class: "cm-pseudo-link", onclick: acceptSide(side, view)}, view.state.phrase("Accept")),
                    " · ", elt("button", {class: "cm-text-button", onclick: copySide(side)}, "⧉")),
-               elt("div", {class: "cm-git-conflict-text"}, highlightText(side.text, view.state, inserted)))
+               elt("div", {class: "cm-git-conflict-text", onscroll: syncScroll},
+                   highlightText(side.text, view.state, inserted)))
   }
 }
 
@@ -78,6 +80,13 @@ function copySide(side: ConflictSide) {
   return () => {
     navigator.clipboard.writeText(side.text)
   }
+}
+
+function syncScroll(event: Event) {
+  let target = event.target as HTMLElement
+  let widget = target.parentNode!.parentNode! as HTMLElement
+  for (let text of Array.from(widget.querySelectorAll(".cm-git-conflict-text")))
+    if (text != target) text.scrollLeft = target.scrollLeft
 }
 
 function highlightText(text: string, state: EditorState, changes: readonly [number, number][]) {
@@ -141,11 +150,31 @@ function matchConflicts(doc: Text) {
   return Decoration.set(deco)
 }
 
+const conflictGutterMarker = new class extends GutterMarker {
+  constructor() {
+    super()
+    this.elementClass = "cm-git-gutterMarker"
+  }
+  toDOM(view: EditorView) {
+    return elt("div", elt("div", elt("button", {
+      class: "cm-git-delete-conflict",
+      onclick: (event: MouseEvent) => {
+        let top = (event.target as HTMLElement).getBoundingClientRect().top + 2
+        let block = view.elementAtHeight(top - view.documentTop)
+        view.dispatch({
+          changes: {from: block.from, to: Math.min(view.state.doc.length, block.to + 1)},
+          userEvent: "conflict.delete"
+        })
+      }
+    }, "×")))
+  }
+}
+
 const theme = EditorView.baseTheme({
   ".cm-git-conflict": {
     display: "flex",
     alignItems: "stretch",
-    paddingTop: "6px"
+    padding: "6px 0 3px 0"
   },
   ".cm-git-conflict-side": {
     flex: "1 1 0",
@@ -182,9 +211,28 @@ const theme = EditorView.baseTheme({
   ".cm-git-conflict-top::selection, .cm-git-conflict-top *::selection": {
     backgroundColor: "transparent"
   },
-  ".cm-git-gutter": {
-    backgroundColor: "#feecc4",
-    color: "#d5b338" // FIXME
+  ".cm-git-gutterMarker": {
+    borderTop: "20px solid transparent",
+    padding: "0 !important",
+    "& > div": {
+      backgroundColor: "#feecc4",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      height: "100%",
+      "& > div": {
+        textAlign: "center"
+      }
+    },
+    "& .cm-git-delete-conflict": {
+      color: "white",
+      backgroundColor: "#c55",
+      fontSize: "8px",
+      lineHeight: "10px",
+      border: "none",
+      padding: "1px 2px",
+      cursor: "pointer"
+    }
   },
   ".cm-pseudo-link, .cm-text-button": {
     background: "transparent",
@@ -203,6 +251,9 @@ const theme = EditorView.baseTheme({
 export function gitConflicts(): Extension {
   return [
     conflicts,
-    theme
+    theme,
+    lineNumberWidgetMarker.of((view, widget) => {
+      return widget instanceof ConflictWidget ? conflictGutterMarker : null
+    })
   ]
 }
