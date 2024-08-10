@@ -36,19 +36,73 @@ export class Conflict {
   ) {}
 }
 
+const enum State { Before, Ours, Base, Theirs, Done }
+
+class Match {
+  state = State.Before
+  ourLabel = ""
+  ourText: string[] = []
+  theirLabel = ""
+  theirText: string[] = []
+  baseLabel: null | string = null
+  baseText: string[] = []
+  startPos = -1
+
+  constructor(public pos: number) {}
+
+  finish() {
+    return new Conflict(new ConflictSide(this.ourText.join("\n"), this.ourLabel),
+                        new ConflictSide(this.theirText.join("\n"), this.theirLabel),
+                        this.baseLabel == null ? null : new ConflictSide(this.baseText.join("\n"), this.baseLabel))
+  }
+
+  matchLine(line: string) {
+    let m
+    if (this.state == State.Before) {
+      if (m = /^<{7} (.+)/.exec(line)) {
+        this.startPos = this.pos
+        this.ourLabel = m[1]
+        this.state = State.Ours
+      }
+    } else if (this.state == State.Ours) {
+      if (m = /^\|{7} (.+)/.exec(line)) {
+        this.baseLabel = m[1]
+        this.state = State.Base
+      } else if (m = /^={7}$/.exec(line)) {
+        this.state = State.Theirs
+      } else {
+        this.ourText.push(line)
+      }
+    } else if (this.state == State.Base) {
+      if (m = /^={7}$/.exec(line)) {
+        this.state = State.Theirs
+      } else {
+        this.baseText.push(line)
+      }
+    } else {
+      if (m = /^>{7} (.+)/.exec(line)) {
+        this.state = State.Done
+        this.theirLabel = m[1]
+      } else {
+        this.theirText.push(line)
+      }
+    }
+    this.pos += line.length + 1
+    return this.state == State.Done
+  }
+}
+
 function matchConflicts(doc: Text) {
-  let conflict = /(?:^|(?<=\n))<<<<<<< (.*)\n([^]*?)\n(?:\|\|\|\|\|\|\| (.*)\n([^]*?)\n)?=======\n([^]*?)\n>>>>>>> (.*)/g
-  let text = doc.toString(), m
   let deco: Range<Decoration>[] = []
-  while (m = conflict.exec(text)) {
-    let [_, ourLabel, ours, baseLabel, base, theirs, theirLabel] = m
-    let conflict = new Conflict(new ConflictSide(ours, ourLabel),
-                                new ConflictSide(theirs, theirLabel),
-                                baseLabel ? new ConflictSide(base, baseLabel) : null)
-    deco.push(Decoration.replace({
-      widget: new ConflictWidget(conflict),
-      block: true,
-    }).range(m.index, m.index + _.length))
+  let iter = doc.iterLines(), match = new Match(0)
+  while (!iter.next().done) {
+    if (match.matchLine(iter.value)) {
+      deco.push(Decoration.replace({
+        widget: new ConflictWidget(match.finish()),
+        block: true,
+      }).range(match.startPos, match.pos - 1))
+      match = new Match(match.pos)
+    }
   }
   return Decoration.set(deco)
 }
