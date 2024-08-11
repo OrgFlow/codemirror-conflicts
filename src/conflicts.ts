@@ -121,6 +121,7 @@ export function acceptAllConflicts(view: EditorView, side: "ours" | "base" | "th
     if (chunk) changes.push({from, to, insert: chunk.text})
   })
   view.dispatch({changes, userEvent: "conflict.accept.all." + side})
+  view.focus()
   return true
 }
 
@@ -130,10 +131,9 @@ export function deleteAllConflicts(view: EditorView) {
   let changes: {from: number, to: number}[] = []
   field.between(0, view.state.doc.length, (from, to) => {changes.push({from, to})})
   view.dispatch({changes, userEvent: "conflict.delete.all"})
+  view.focus()
   return true
 }
-
-// FIXME move focus to actual conflict
 
 function selectConflict(view: EditorView, userEvent: string, select: (conflicts: {from: number, to: number}[]) => number) {
   let field = view.state.field(conflicts, false)
@@ -146,6 +146,7 @@ function selectConflict(view: EditorView, userEvent: string, select: (conflicts:
     userEvent: "select.conflict." + userEvent,
     effects: EditorView.scrollIntoView(EditorSelection.range(range.from, range.to))
   })
+  focusConflict(view, range.from)
   return true
 }
 
@@ -171,6 +172,12 @@ export function selectPrevConflict(view: EditorView) {
   })
 }
 
+function focusConflict(view: EditorView, pos: number) {
+  let {node, offset} = view.domAtPos(pos)
+  let dom = node.childNodes[offset]
+  ;(dom.firstChild as HTMLElement).focus()
+}
+
 function moveToConflict(view: EditorView, forward: boolean) {
   let field = view.state.field(conflicts, false)
   if (!field || !field.size) return false
@@ -180,9 +187,7 @@ function moveToConflict(view: EditorView, forward: boolean) {
   let pos = forward ? line.to + 1 : line.from - 1, hasConflict = -1
   field.between(pos, pos, from => {hasConflict = from})
   if (hasConflict < 0) return false
-  let {node, offset} = view.domAtPos(hasConflict)
-  let widget = node.childNodes[offset]
-  ;(widget.firstChild as HTMLElement).focus()
+  focusConflict(view, hasConflict)
   return true
 }
 

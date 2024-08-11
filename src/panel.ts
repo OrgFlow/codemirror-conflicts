@@ -14,32 +14,61 @@ class ConflictPanel {
   constructor(view: EditorView) {
     this.count = elt("span")
     this.acceptBase = elt("span",
-                          elt("button", {class: "cm-pseudo-link", onclick: () => acceptAllConflicts(view, "base")},
+                          elt("button", {class: "cm-pseudo-link", onclick: () => acceptAllConflicts(view, "base"),
+                                         "aria-role": "menuitem", tabindex: "-1"},
                               view.state.phrase("Accept all original")),
                           " · ")
-    this.dom = elt("div", {class: "cm-git-conflict-panel"},
-                   elt("div",
-                       this.count,
-                       "   ",
-                       elt("button", {class: "cm-pseudo-link", onclick: () => acceptAllConflicts(view, "ours")},
-                           view.state.phrase("Accept all ours")),
-                       " · ",
-                       this.acceptBase,
-                       elt("button", {class: "cm-pseudo-link", onclick: () => acceptAllConflicts(view, "theirs")},
-                           view.state.phrase("Accept all theirs")),
-                       " · ",
-                       elt("button", {class: "cm-git-delete-conflict", onclick: () => deleteAllConflicts(view)}, "×"),
-                       " ",
-                       elt("button", {class: "cm-pseudo-link", onclick: () => deleteAllConflicts(view)},
-                           view.state.phrase("Delete all"))),
-                   elt("div",
-                       elt("button", {class: "cm-text-button", onclick: () => selectFirstConflict(view)}, "⤒"),
-                       " ",
-                       elt("button", {class: "cm-text-button", onclick: () => selectPrevConflict(view)}, "↑"),
-                       " ",
-                       elt("button", {class: "cm-text-button", onclick: () => selectNextConflict(view)}, "↓"),
-                       " ",
-                       elt("button", {class: "cm-text-button", onclick: () => selectLastConflict(view)}, "⤓")))
+    this.dom = elt("div", {
+      class: "cm-git-conflict-panel",
+      "aria-role": "menubar",
+      tabindex: "-1",
+      onkeydown: (event: KeyboardEvent) => {
+        if (event.key == "ArrowLeft" || event.key == "ArrowRight") {
+          let items = Array.from(this.dom.querySelectorAll("[aria-role=menuitem]")) as HTMLElement[]
+          let index = items.indexOf(this.dom.ownerDocument.activeElement as HTMLElement)
+          if (index < 0) items[0].focus()
+          else if (event.key == "ArrowLeft") items[index ? index - 1 : items.length - 1].focus()
+          else items[index == items.length - 1 ? 0 : index + 1].focus()
+          event.preventDefault()
+        } else if (event.key == "Escape") {
+          view.focus()
+          event.preventDefault()
+        }
+      }
+    }, elt("div",
+           this.count,
+           "   ",
+           elt("button", {class: "cm-pseudo-link", onclick: () => acceptAllConflicts(view, "ours"),
+                          "aria-role": "menuitem"},
+               view.state.phrase("Accept all ours")),
+           " · ",
+           this.acceptBase,
+           elt("button", {class: "cm-pseudo-link", onclick: () => acceptAllConflicts(view, "theirs"),
+                          "aria-role": "menuitem", tabindex: "-1"},
+               view.state.phrase("Accept all theirs")),
+           " · ",
+           elt("button", {class: "cm-git-delete-conflict", onclick: () => deleteAllConflicts(view),
+               "aria-hidden": "true", tabindex: "-1"}, "×"),
+           " ",
+           elt("button", {class: "cm-pseudo-link", onclick: () => deleteAllConflicts(view),
+                          "aria-role": "menuitem", tabindex: "-1"},
+               view.state.phrase("Delete all"))),
+       elt("div",
+           elt("button", {class: "cm-text-button", onclick: () => selectFirstConflict(view),
+                          "aria-role": "menuitem", tabindex: "-1",
+                          "aria-description": view.state.phrase("Select first conflict")}, "⤒"),
+           " ",
+           elt("button", {class: "cm-text-button", onclick: () => selectPrevConflict(view),
+                          "aria-role": "menuitem", tabindex: "-1",
+                          "aria-description": view.state.phrase("Select previous conflict")}, "↑"),
+           " ",
+           elt("button", {class: "cm-text-button", onclick: () => selectNextConflict(view),
+                          "aria-role": "menuitem", tabindex: "-1",
+                          "aria-description": view.state.phrase("Select next conflict")}, "↓"),
+           " ",
+           elt("button", {class: "cm-text-button", onclick: () => selectLastConflict(view),
+                          "aria-role": "menuitem", tabindex: "-1",
+                          "aria-description": view.state.phrase("Select last conflict")}, "⤓")))
     this.updateFor(view.state)
   }
 
