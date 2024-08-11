@@ -2,25 +2,6 @@ import {Text, StateField, Range, Extension} from "@codemirror/state"
 import {EditorView, Decoration, DecorationSet, lineNumberWidgetMarker} from "@codemirror/view"
 import {theme, ConflictWidget, conflictGutterMarker} from "./widgets.js"
 
-const conflicts = StateField.define<DecorationSet>({
-  create: s => matchConflicts(s.doc),
-  update(conflicts, tr) {
-    if (!tr.changes.empty) {
-      let del: number[] = []
-      tr.changes.iterChangedRanges((from, to) => {
-        conflicts.between(from, to, (cFrom, cTo) => {
-          if (cFrom < to && cTo > from) del.push(cFrom)
-        })
-      })
-      if (del.length)
-        conflicts = conflicts.update({filter: from => del.indexOf(from) == -1})
-      conflicts = conflicts.map(tr.changes)
-    }
-    return conflicts
-  },
-  provide: f => EditorView.decorations.from(f)
-})
-
 export class ConflictSide {
   constructor(
     readonly text: string,
@@ -106,6 +87,29 @@ function matchConflicts(doc: Text) {
   }
   return Decoration.set(deco)
 }
+
+function hasConflictMarker(doc: Text, from: number, to: number) {
+  let iter = doc.iterLines(doc.lineAt(from).number, doc.lineAt(to).number + 1)
+  while (!iter.next().done) if (/^(<{7} |\|{7} |>{7} |={7}$)/.test(iter.value)) return true
+  return false
+}
+
+const conflicts = StateField.define<DecorationSet>({
+  create: s => matchConflicts(s.doc),
+  update(conflicts, tr) {
+    if (tr.changes.empty) return conflicts
+    let del: number[] = [], recompute = false
+    tr.changes.iterChangedRanges((from, to) => {
+      if (hasConflictMarker(tr.state.doc, from, to)) recompute = true
+      conflicts.between(from, to, (cFrom, cTo) => {
+        if (cFrom < to && cTo > from) del.push(cFrom)
+      })
+    })
+    return recompute ? matchConflicts(tr.state.doc)
+      : (del.length ? conflicts.update({filter: from => del.indexOf(from) == -1}) : conflicts).map(tr.changes)
+  },
+  provide: f => EditorView.decorations.from(f)
+})
 
 export function gitConflicts(): Extension {
   return [
