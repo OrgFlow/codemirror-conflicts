@@ -170,3 +170,26 @@ export function selectPrevConflict(view: EditorView) {
     return found
   })
 }
+
+function moveToConflict(view: EditorView, forward: boolean) {
+  let field = view.state.field(conflicts, false)
+  if (!field || !field.size) return false
+  let {main} = view.state.selection
+  let line = view.state.doc.lineAt(main.head), next = view.moveVertically(main, forward)
+  if (next.head >= line.from && next.head <= line.to) return false
+  let pos = forward ? line.to + 1 : line.from - 1, hasConflict = -1
+  field.between(pos, pos, from => {hasConflict = from})
+  if (hasConflict < 0) return false
+  let {node, offset} = view.domAtPos(hasConflict)
+  let widget = node.childNodes[offset]
+  ;(widget.firstChild as HTMLElement).focus()
+  return true
+}
+
+export function moveDownToConflict(view: EditorView) {
+  return moveToConflict(view, true)
+}
+
+export function moveUpToConflict(view: EditorView) {
+  return moveToConflict(view, false)
+}

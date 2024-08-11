@@ -11,21 +11,67 @@ export class ConflictWidget extends WidgetType {
 
   toDOM(view: EditorView) {
     let diff = presentableDiff(this.conflict.ours.text, this.conflict.theirs.text)
-    return elt("div", {class: "cm-git-conflict"},
-               this.renderSide("ours", this.conflict.ours, diff.map(c => [c.fromA, c.toA]), view),
-               this.conflict.base ? this.renderSide("base", this.conflict.base, [], view) : [],
-               this.renderSide("theirs", this.conflict.theirs, diff.map(c => [c.fromB, c.toB]), view))
+    let sides = [
+      this.renderSide("ours", this.conflict.ours, diff.map(c => [c.fromA, c.toA]), view),
+      ...this.conflict.base ? [this.renderSide("base", this.conflict.base, [], view)] : [],
+      this.renderSide("theirs", this.conflict.theirs, diff.map(c => [c.fromB, c.toB]), view)
+    ]
+    return elt("div", {
+      class: "cm-git-conflict",
+      "aria-role": "menubar",
+      "aria-description": view.state.phrase("Merge conflict"),
+      tabindex: "-1",
+      onkeydown: (event: KeyboardEvent) => this.keydown(event, view, sides)
+    }, sides.map(s => s.dom))
   }
 
   renderSide(tag: string, side: ConflictSide, inserted: [number, number][], view: EditorView) {
     let label = view.state.phrase(tag == "ours" ? "Ours" : tag == "base" ? "Original" : "Theirs")
-    return elt("div", {class: "cm-git-conflict-side cm-git-conflict-" + tag},
-               elt("div", {class: "cm-git-conflict-top"},
-                   elt("strong", label), " · ", maybeAbbrev(side.label), " · ",
-                   elt("button", {class: "cm-pseudo-link", onclick: acceptSide(side, view)}, view.state.phrase("Accept")),
-                   " · ", elt("button", {class: "cm-text-button", onclick: copySide(side)}, "⧉")),
-               elt("div", {class: "cm-git-conflict-text", onscroll: syncScroll},
-                   highlightText(side.text, view.state, inserted)))
+    let dom = elt("div", {
+      class: "cm-git-conflict-side cm-git-conflict-" + tag,
+      "aria-role": "menuitem",
+      tabindex: tag == "ours" ? "0" : "-1",
+      oncopy: copySide(side)
+    }, elt("div", {class: "cm-git-conflict-top"},
+           elt("strong", label), " · ", maybeAbbrev(side.label), " · ",
+           elt("button", {class: "cm-pseudo-link", onclick: acceptSide(side, view)}, view.state.phrase("Accept")), " · ",
+           elt("button", {class: "cm-text-button", onclick: copySide(side),
+                          "aria-description": view.state.phrase("Copy")}, "⧉")),
+       elt("div", {class: "cm-git-conflict-text", onscroll: syncScroll},
+           highlightText(side.text, view.state, inserted)))
+    return {dom, side}
+  }
+
+  keydown(event: KeyboardEvent, view: EditorView, sides: readonly {dom: HTMLElement, side: ConflictSide}[]) {
+    let side = Math.max(0, sides.findIndex(s => s.dom == document.activeElement))
+    if (event.key == "ArrowLeft" || event.key == "ArrowRight") {
+      if (event.key == "ArrowLeft") side = side ? side - 1 : sides.length - 1
+      else side = side == sides.length - 1 ? 0 : side + 1
+      sides[side].dom.focus()
+      event.preventDefault()
+    } else if (event.key == "Enter") {
+      acceptSide(sides[side].side, view)(event)
+      event.preventDefault()
+    } else if (event.key == "Backspace" || event.key == "Delete") {
+      let block = widgetExtent(view, event.target as HTMLElement)
+      view.dispatch({
+        changes: {from: block.from, to: Math.min(view.state.doc.length, block.to + 1)},
+        selection: {anchor: block.from},
+        userEvent: "conflict.delete"
+      })
+      view.focus()
+      event.preventDefault()
+    } else if (event.key == "Escape" || event.key == "Tab" || event.key == "ArrowDown" || event.key == "ArrowUp") {
+      let block = widgetExtent(view, event.target as HTMLElement)
+      let up = event.key == "ArrowUp" || event.key == "Tab" && event.shiftKey
+      view.dispatch({
+        selection: {anchor: up ? Math.max(0, block.from - 1) : Math.min(view.state.doc.length, block.to + 1)},
+        userEvent: "select",
+        scrollIntoView: true
+      })
+      view.focus()
+      event.preventDefault()
+    }
   }
 }
 
@@ -33,13 +79,19 @@ function maybeAbbrev(gitLabel: string) {
   return /^[\da-f]{40}$/.test(gitLabel) ? gitLabel.slice(33) : gitLabel
 }
 
+function widgetExtent(view: EditorView, dom: HTMLElement) {
+  return view.lineBlockAt(view.posAtDOM(dom))
+}
+
 function acceptSide(side: ConflictSide, view: EditorView) {
-  return (event: MouseEvent) => {
-    let pos = view.posAtDOM(event.target as HTMLElement), block = view.lineBlockAt(pos)
+  return (event: Event) => {
+    let block = widgetExtent(view, event.target as HTMLElement)
     view.dispatch({
       changes: {from: block.from, to: block.to, insert: side.text},
+      selection: {anchor: block.from},
       userEvent: "conflict.accept"
     })
+    view.focus()
   }
 }
 

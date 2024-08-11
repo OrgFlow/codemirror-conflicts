@@ -4,14 +4,18 @@ export const theme = EditorView.baseTheme({
   ".cm-git-conflict": {
     display: "flex",
     alignItems: "stretch",
-    padding: "6px 0 3px 0"
+    padding: "6px 2px 3px 2px"
   },
   ".cm-git-conflict-side": {
     flex: "1 1 0",
     width: 0,
-    paddingLeft: "6px",
+    padding: "0 2px 0 4px",
     display: "flex",
-    flexDirection: "column"
+    flexDirection: "column",
+    borderRadius: "2px",
+    "&:focus": {
+      outline: "2px solid #99d"
+    }
   },
   ".cm-git-conflict-text": {
     whiteSpace: "pre",
