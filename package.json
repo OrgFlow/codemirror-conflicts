@@ -23,10 +23,10 @@
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.31.0",
     "@lezer/highlight": "^1.2.0",
+	"@codemirror/lang-xml": "^6.1.0",
     "crelt": "^1.0.6"
   },
   "devDependencies": {
-    "@codemirror/lang-javascript": "^6.2.2",
     "@marijn/buildtool": "^1.0.0",
     "codemirror": "^6.0.1",
     "esmoduleserve": "^0.2.1"
