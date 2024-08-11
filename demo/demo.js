@@ -32,10 +32,10 @@ here
 end
 `,
   extensions: [
+    gitConflicts(),
     minimalSetup,
     lineNumbers(),
     javascript(),
-    gitConflicts()
   ],
   parent: document.body
 })

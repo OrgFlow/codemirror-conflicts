@@ -1,4 +1,4 @@
-import {Text, StateField, Range} from "@codemirror/state"
+import {Text, StateField, Range, EditorSelection} from "@codemirror/state"
 import {EditorView, Decoration, DecorationSet} from "@codemirror/view"
 import {ConflictWidget} from "./widgets.js"
 
@@ -99,10 +99,10 @@ export const conflicts = StateField.define<DecorationSet>({
   update(conflicts, tr) {
     if (tr.changes.empty) return conflicts
     let del: number[] = [], recompute = false
-    tr.changes.iterChangedRanges((from, to) => {
-      if (hasConflictMarker(tr.state.doc, from, to)) recompute = true
-      conflicts.between(from, to, (cFrom, cTo) => {
-        if (cFrom < to && cTo > from) del.push(cFrom)
+    tr.changes.iterChangedRanges((fromA, toA, fromB, toB) => {
+      if (hasConflictMarker(tr.state.doc, fromB, toB)) recompute = true
+      conflicts.between(fromA, toA, (cFrom, cTo) => {
+        if (cFrom <= toA && cTo >= fromA) del.push(cFrom)
       })
     })
     return recompute ? matchConflicts(tr.state.doc)
@@ -110,3 +110,63 @@ export const conflicts = StateField.define<DecorationSet>({
   },
   provide: f => EditorView.decorations.from(f)
 })
+
+export function acceptAllConflicts(view: EditorView, side: "ours" | "base" | "theirs") {
+  let field = view.state.field(conflicts, false)
+  if (!field || !field.size) return false
+  let changes: {from: number, to: number, insert: string}[] = []
+  field.between(0, view.state.doc.length, (from, to, deco) => {
+    let {conflict} = deco.spec.widget as ConflictWidget
+    let chunk = conflict[side]
+    if (chunk) changes.push({from, to, insert: chunk.text})
+  })
+  view.dispatch({changes, userEvent: "conflict.accept.all." + side})
+  return true
+}
+
+export function deleteAllConflicts(view: EditorView) {
+  let field = view.state.field(conflicts, false)
+  if (!field || !field.size) return false
+  let changes: {from: number, to: number}[] = []
+  field.between(0, view.state.doc.length, (from, to) => {changes.push({from, to})})
+  view.dispatch({changes, userEvent: "conflict.delete.all"})
+  return true
+}
+
+// FIXME move focus to actual conflict
+
+function selectConflict(view: EditorView, userEvent: string, select: (conflicts: {from: number, to: number}[]) => number) {
+  let field = view.state.field(conflicts, false)
+  if (!field || !field.size) return false
+  let ranges: {from: number, to: number}[] = []
+  field.between(0, view.state.doc.length, (from, to) => {ranges.push({from, to})})
+  let range = ranges[select(ranges)]
+  view.dispatch({
+    selection: {anchor: range.from},
+    userEvent: "select.conflict." + userEvent,
+    effects: EditorView.scrollIntoView(EditorSelection.range(range.from, range.to))
+  })
+  return true
+}
+
+export function selectFirstConflict(view: EditorView) {
+  return selectConflict(view, "first", () => 0)
+}
+  
+export function selectLastConflict(view: EditorView) {
+  return selectConflict(view, "last", rs => rs.length - 1)
+}
+
+export function selectNextConflict(view: EditorView) {
+  let {head} = view.state.selection.main
+  return selectConflict(view, "next", rs => Math.max(0, rs.findIndex(r => r.from > head)))
+}
+
+export function selectPrevConflict(view: EditorView) {
+  let {head} = view.state.selection.main
+  return selectConflict(view, "next", ranges => {
+    let found = ranges.length - 1
+    for (let i = 0; i < ranges.length; i++) if (ranges[i].to < head) found = i
+    return found
+  })
+}
