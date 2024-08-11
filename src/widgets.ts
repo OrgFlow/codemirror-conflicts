@@ -1,5 +1,5 @@
 import {EditorState} from "@codemirror/state"
-import {EditorView, WidgetType, GutterMarker} from "@codemirror/view"
+import {EditorView, WidgetType, GutterMarker, lineNumberWidgetMarker} from "@codemirror/view"
 import {language, highlightingFor} from "@codemirror/language"
 import {highlightTree} from "@lezer/highlight"
 import {presentableDiff} from "@codemirror/merge"
@@ -119,6 +119,10 @@ export const conflictGutterMarker = new class extends GutterMarker {
     }, "×")))
   }
 }
+
+export const lineNumberWidget = lineNumberWidgetMarker.of((view, widget) => {
+  return widget instanceof ConflictWidget ? conflictGutterMarker : null
+})
 
 export const theme = EditorView.baseTheme({
   ".cm-git-conflict": {

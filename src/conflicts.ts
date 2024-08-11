@@ -1,6 +1,6 @@
-import {Text, StateField, Range, Extension} from "@codemirror/state"
-import {EditorView, Decoration, DecorationSet, lineNumberWidgetMarker} from "@codemirror/view"
-import {theme, ConflictWidget, conflictGutterMarker} from "./widgets.js"
+import {Text, StateField, Range} from "@codemirror/state"
+import {EditorView, Decoration, DecorationSet} from "@codemirror/view"
+import {ConflictWidget} from "./widgets.js"
 
 export class ConflictSide {
   constructor(
@@ -94,7 +94,7 @@ function hasConflictMarker(doc: Text, from: number, to: number) {
   return false
 }
 
-const conflicts = StateField.define<DecorationSet>({
+export const conflicts = StateField.define<DecorationSet>({
   create: s => matchConflicts(s.doc),
   update(conflicts, tr) {
     if (tr.changes.empty) return conflicts
@@ -110,13 +110,3 @@ const conflicts = StateField.define<DecorationSet>({
   },
   provide: f => EditorView.decorations.from(f)
 })
-
-export function gitConflicts(): Extension {
-  return [
-    conflicts,
-    theme,
-    lineNumberWidgetMarker.of((view, widget) => {
-      return widget instanceof ConflictWidget ? conflictGutterMarker : null
-    })
-  ]
-}
