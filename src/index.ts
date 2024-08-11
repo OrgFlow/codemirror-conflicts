@@ -5,6 +5,8 @@ import {lineNumberWidget} from "./widgets.js"
 import {conflicts, moveDownToConflict, moveUpToConflict} from "./conflicts.js"
 import {conflictPanel} from "./panel.js"
 
+export {selectNextConflict, selectPrevConflict, selectFirstConflict, selectLastConflict} from "./conflicts.js"
+
 export function gitConflicts(): Extension {
   return [
     conflicts,

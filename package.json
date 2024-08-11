@@ -4,7 +4,8 @@
   "description": "Side-by-side highlighting of git conflict markers in CodeMirror",
   "scripts": {
     "prepare": "node bin/build.js",
-    "watch": "node bin/build.js --watch"
+    "watch": "node bin/build.js --watch",
+    "demo": "esmoduleserve demo/ --port 8888"
   },
   "type": "module",
   "main": "dist/index.cjs",
