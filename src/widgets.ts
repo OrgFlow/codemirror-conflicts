@@ -35,8 +35,9 @@ export class ConflictWidget extends WidgetType {
       oncopy: copySide(side)
     }, elt("div", {class: "cm-git-conflict-top"},
            elt("strong", label), " · ", maybeAbbrev(side.label), " · ",
-           elt("button", {class: "cm-pseudo-link", onclick: acceptSide(side, view)}, view.state.phrase("Accept")), " · ",
-           elt("button", {class: "cm-text-button", onclick: copySide(side),
+           elt("button", {class: "cm-pseudo-link", onclick: acceptSide(side, view), tabindex: "-1"},
+               view.state.phrase("Accept")), " · ",
+           elt("button", {class: "cm-text-button", onclick: copySide(side), tabindex: "-1",
                           "aria-description": view.state.phrase("Copy")}, "⧉")),
        elt("div", {class: "cm-git-conflict-text", onscroll: syncScroll},
            highlightText(side.text, view.state, inserted)))
@@ -163,6 +164,7 @@ export const conflictGutterMarker = new class extends GutterMarker {
   toDOM(view: EditorView) {
     return elt("div", elt("button", {
       class: "cm-git-delete-conflict",
+      tabindex: "-1",
       onclick: (event: MouseEvent) => {
         let top = (event.target as HTMLElement).getBoundingClientRect().top + 2
         let block = view.elementAtHeight(top - view.documentTop)
