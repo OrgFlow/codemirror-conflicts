@@ -1,6 +1,6 @@
 import {Text, StateField, Range, EditorSelection} from "@codemirror/state"
 import {EditorView, Decoration, DecorationSet} from "@codemirror/view"
-import {ConflictWidget} from "./widgets.js"
+import {ConflictWidget} from "./widgets"
 
 export class ConflictSide {
   constructor(

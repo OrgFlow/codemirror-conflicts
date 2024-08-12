@@ -1,9 +1,9 @@
 import {EditorView, ViewUpdate, showPanel, DecorationSet, Decoration} from "@codemirror/view"
 import {EditorState} from "@codemirror/state"
 import {conflicts, acceptAllConflicts, deleteAllConflicts,
-        selectFirstConflict, selectLastConflict, selectNextConflict, selectPrevConflict} from "./conflicts.js"
-import {ConflictWidget} from "./widgets.js"
-import {conflictConfig} from "./config.js"
+        selectFirstConflict, selectLastConflict, selectNextConflict, selectPrevConflict} from "./conflicts"
+import {ConflictWidget} from "./widgets"
+import {conflictConfig} from "./config"
 import elt from "crelt"
 
 class ConflictPanel {

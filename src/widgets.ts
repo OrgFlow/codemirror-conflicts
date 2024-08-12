@@ -4,8 +4,8 @@ import {EditorView, WidgetType, GutterMarker, lineNumberWidgetMarker, gutterWidg
 import {language, highlightingFor} from "@codemirror/language"
 import {highlightTree} from "@lezer/highlight"
 import {presentableDiff} from "@codemirror/merge"
-import {Conflict, ConflictSide} from "./conflicts.js"
-import {conflictConfig} from "./config.js"
+import {Conflict, ConflictSide} from "./conflicts"
+import {conflictConfig} from "./config"
 import elt from "crelt"
 
 export class ConflictWidget extends WidgetType {
