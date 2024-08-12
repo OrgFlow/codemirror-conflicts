@@ -31,7 +31,7 @@ export class ConflictWidget extends WidgetType {
     let dom = elt("div", {
       class: "cm-git-conflict-side cm-git-conflict-" + tag,
       role: "menuitem",
-      tabindex: tag == "ours" ? "0" : "-1",
+      tabindex: "-1",
       oncopy: copySide(side)
     }, elt("div", {class: "cm-git-conflict-top"},
            elt("strong", label), " · ", maybeAbbrev(side.label), " · ",
