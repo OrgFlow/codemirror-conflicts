@@ -48,7 +48,9 @@ export class ConflictWidget extends WidgetType {
     if (event.key == "ArrowLeft" || event.key == "ArrowRight") {
       if (event.key == "ArrowLeft") side = side ? side - 1 : sides.length - 1
       else side = side == sides.length - 1 ? 0 : side + 1
-      sides[side].dom.focus()
+      let target = sides[side].dom
+      target.focus()
+      target.ownerDocument.getSelection()!.collapse(target, 0)
       event.preventDefault()
     } else if (event.key == "Enter") {
       acceptSide(sides[side].side, view)(event)
