@@ -19,7 +19,7 @@ export class ConflictWidget extends WidgetType {
     ]
     return elt("div", {
       class: "cm-git-conflict",
-      "aria-role": "menubar",
+      role: "menubar",
       "aria-description": view.state.phrase("Merge conflict"),
       tabindex: "-1",
       onkeydown: (event: KeyboardEvent) => this.keydown(event, view, sides),
@@ -30,7 +30,7 @@ export class ConflictWidget extends WidgetType {
     let label = view.state.phrase(tag == "ours" ? "Ours" : tag == "base" ? "Original" : "Theirs")
     let dom = elt("div", {
       class: "cm-git-conflict-side cm-git-conflict-" + tag,
-      "aria-role": "menuitem",
+      role: "menuitem",
       tabindex: tag == "ours" ? "0" : "-1",
       oncopy: copySide(side)
     }, elt("div", {class: "cm-git-conflict-top"},
