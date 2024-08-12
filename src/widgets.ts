@@ -1,5 +1,6 @@
 import {EditorState} from "@codemirror/state"
-import {EditorView, WidgetType, GutterMarker, lineNumberWidgetMarker, ViewPlugin, ViewUpdate} from "@codemirror/view"
+import {EditorView, WidgetType, GutterMarker, lineNumberWidgetMarker, gutterWidgetClass,
+        ViewPlugin, ViewUpdate} from "@codemirror/view"
 import {language, highlightingFor} from "@codemirror/language"
 import {highlightTree} from "@lezer/highlight"
 import {presentableDiff} from "@codemirror/merge"
@@ -158,7 +159,7 @@ export const conflictGutterMarker = new class extends GutterMarker {
     this.elementClass = "cm-git-gutterMarker"
   }
   toDOM(view: EditorView) {
-    return elt("div", elt("div", elt("button", {
+    return elt("div", elt("button", {
       class: "cm-git-delete-conflict",
       onclick: (event: MouseEvent) => {
         let top = (event.target as HTMLElement).getBoundingClientRect().top + 2
@@ -168,12 +169,20 @@ export const conflictGutterMarker = new class extends GutterMarker {
           userEvent: "conflict.delete"
         })
       }
-    }, "×")))
+    }, "×"))
   }
 }
 
 export const lineNumberWidget = lineNumberWidgetMarker.of((view, widget) => {
   return widget instanceof ConflictWidget ? conflictGutterMarker : null
+})
+
+const gutterClassWidget = new class extends GutterMarker {
+  elementClass = "cm-git-gutterColor"
+}
+
+export const gutterColor = gutterWidgetClass.of((_view, widget) => {
+  return widget instanceof ConflictWidget ? gutterClassWidget : null
 })
 
 export const widthTracker = ViewPlugin.fromClass(class {

@@ -48,18 +48,16 @@ export const theme = EditorView.baseTheme({
   },
 
   ".cm-git-gutterMarker": {
-    borderTop: "20px solid transparent",
-    padding: "0 !important",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    height: "100%",
     "& > div": {
-      backgroundColor: "#feecc4",
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
-      height: "100%",
-      "& > div": {
-        textAlign: "center"
-      }
+      textAlign: "center"
     }
+  },
+  ".cm-git-gutterColor": {
+    backgroundColor: "#feecc4",
   },
 
   ".cm-git-conflict-panel": {
