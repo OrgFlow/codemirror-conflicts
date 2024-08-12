@@ -3,6 +3,7 @@ import {EditorState} from "@codemirror/state"
 import {conflicts, acceptAllConflicts, deleteAllConflicts,
         selectFirstConflict, selectLastConflict, selectNextConflict, selectPrevConflict} from "./conflicts.js"
 import {ConflictWidget} from "./widgets.js"
+import {conflictConfig} from "./config.js"
 import elt from "crelt"
 
 class ConflictPanel {
@@ -12,11 +13,12 @@ class ConflictPanel {
   current: DecorationSet = Decoration.none
 
   constructor(view: EditorView) {
+    let conf = view.state.facet(conflictConfig)
     this.count = elt("span")
     this.acceptBase = elt("span",
                           elt("button", {class: "cm-pseudo-link", onclick: () => acceptAllConflicts(view, "base"),
                                          role: "menuitem", tabindex: "-1"},
-                              view.state.phrase("Accept all original")),
+                              view.state.phrase(`Accept all ${conf.labels.base}`)),
                           " · ")
     this.dom = elt("div", {
       class: "cm-git-conflict-panel",
@@ -40,12 +42,12 @@ class ConflictPanel {
            "   ",
            elt("button", {class: "cm-pseudo-link", onclick: () => acceptAllConflicts(view, "ours"),
                           role: "menuitem"},
-               view.state.phrase("Accept all ours")),
+               view.state.phrase(`Accept all ${conf.labels.ours}`)),
            " · ",
            this.acceptBase,
            elt("button", {class: "cm-pseudo-link", onclick: () => acceptAllConflicts(view, "theirs"),
                           role: "menuitem", tabindex: "-1"},
-               view.state.phrase("Accept all theirs")),
+               view.state.phrase(`Accept all ${conf.labels.theirs}`)),
            " · ",
            elt("button", {class: "cm-git-delete-conflict", onclick: () => deleteAllConflicts(view),
                "aria-hidden": "true", tabindex: "-1"}, "×"),

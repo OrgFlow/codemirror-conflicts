@@ -12,10 +12,11 @@ build). Run the demo with `npm run demo`.
 
 ## Interface
 
-**`gitConflicts`**`(): Extension`
+**`gitConflicts`**`(config?: {labels?: {ours: string, theirs: string, base: string}}): Extension`
 
 Returns an editor extension that enables the conflict highlighting and
-toolbar.
+toolbar. Optionally pass in a configuration to provide labels to use for
+conflict sides.
 
 **`selectNextConflict`**`, `**`selectPrevConflict`**`, `**`selectFirstConflict`**`, `**`selectLastConflict`**`: Command`
 

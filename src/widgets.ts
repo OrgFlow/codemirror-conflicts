@@ -5,6 +5,7 @@ import {language, highlightingFor} from "@codemirror/language"
 import {highlightTree} from "@lezer/highlight"
 import {presentableDiff} from "@codemirror/merge"
 import {Conflict, ConflictSide} from "./conflicts.js"
+import {conflictConfig} from "./config.js"
 import elt from "crelt"
 
 export class ConflictWidget extends WidgetType {
@@ -26,15 +27,15 @@ export class ConflictWidget extends WidgetType {
     }, sides.map(s => s.dom))
   }
 
-  renderSide(tag: string, side: ConflictSide, inserted: [number, number][], view: EditorView) {
-    let label = view.state.phrase(tag == "ours" ? "Ours" : tag == "base" ? "Original" : "Theirs")
+  renderSide(tag: "ours" | "base" | "theirs", side: ConflictSide, inserted: [number, number][], view: EditorView) {
+    let conf = view.state.facet(conflictConfig)
     let dom = elt("div", {
       class: "cm-git-conflict-side cm-git-conflict-" + tag,
       role: "menuitem",
       tabindex: "-1",
       oncopy: copySide(side)
     }, elt("div", {class: "cm-git-conflict-top"},
-           elt("strong", label), " · ", maybeAbbrev(side.label), " · ",
+           elt("strong", capitalize(conf.labels[tag])), " · ", maybeAbbrev(side.label), " · ",
            elt("button", {class: "cm-pseudo-link", onclick: acceptSide(side, view), tabindex: "-1"},
                view.state.phrase("Accept")), " · ",
            elt("button", {class: "cm-text-button", onclick: copySide(side), tabindex: "-1",
@@ -110,6 +111,11 @@ function syncScroll(event: Event) {
   let widget = target.parentNode!.parentNode! as HTMLElement
   for (let text of Array.from(widget.querySelectorAll(".cm-git-conflict-text")))
     if (text != target) text.scrollLeft = target.scrollLeft
+}
+
+function capitalize(str: string) {
+  let first = String.fromCodePoint(str.codePointAt(0)!)
+  return first.toUpperCase() + str.slice(first.length)
 }
 
 function highlightText(text: string, state: EditorState, changes: readonly [number, number][]) {
