@@ -4,6 +4,7 @@ export const theme = EditorView.baseTheme({
   ".cm-git-conflict": {
     display: "flex",
     alignItems: "stretch",
+    maxWidth: "var(--visible-line-width)",
     padding: "6px 2px 3px 2px"
   },
   ".cm-git-conflict-side": {

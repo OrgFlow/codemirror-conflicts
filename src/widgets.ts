@@ -1,5 +1,5 @@
 import {EditorState} from "@codemirror/state"
-import {EditorView, WidgetType, GutterMarker, lineNumberWidgetMarker} from "@codemirror/view"
+import {EditorView, WidgetType, GutterMarker, lineNumberWidgetMarker, ViewPlugin, ViewUpdate} from "@codemirror/view"
 import {language, highlightingFor} from "@codemirror/language"
 import {highlightTree} from "@lezer/highlight"
 import {presentableDiff} from "@codemirror/merge"
@@ -21,7 +21,7 @@ export class ConflictWidget extends WidgetType {
       "aria-role": "menubar",
       "aria-description": view.state.phrase("Merge conflict"),
       tabindex: "-1",
-      onkeydown: (event: KeyboardEvent) => this.keydown(event, view, sides)
+      onkeydown: (event: KeyboardEvent) => this.keydown(event, view, sides),
     }, sides.map(s => s.dom))
   }
 
@@ -174,4 +174,27 @@ export const conflictGutterMarker = new class extends GutterMarker {
 
 export const lineNumberWidget = lineNumberWidgetMarker.of((view, widget) => {
   return widget instanceof ConflictWidget ? conflictGutterMarker : null
+})
+
+export const widthTracker = ViewPlugin.fromClass(class {
+  width = -1
+
+  constructor(readonly view: EditorView) {
+    view.requestMeasure(this)
+  }
+
+  read() {
+    return this.view.scrollDOM.clientWidth - this.view.contentDOM.offsetLeft
+  }
+
+  write(width: number) {
+    if (Math.abs(width - this.width) > 1) {
+      this.width = width
+      this.view.dom.style.setProperty("--visible-line-width", width + "px")
+    }
+  }
+
+  update(update: ViewUpdate) {
+    if (update.geometryChanged) this.view.requestMeasure(this)
+  }
 })
