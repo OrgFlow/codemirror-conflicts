@@ -26,7 +26,7 @@ class ConflictPanel {
       tabindex: "-1",
       onkeydown: (event: KeyboardEvent) => {
         if (event.key == "ArrowLeft" || event.key == "ArrowRight") {
-          let items = Array.from(this.dom.querySelectorAll("[aria-role=menuitem]")) as HTMLElement[]
+          let items = Array.from(this.dom.querySelectorAll("[role=menuitem]")) as HTMLElement[]
           let index = items.indexOf(this.dom.ownerDocument.activeElement as HTMLElement)
           if (index < 0) items[0].focus()
           else if (event.key == "ArrowLeft") items[index ? index - 1 : items.length - 1].focus()
