@@ -1,5 +1,5 @@
 import {Text, StateField, Range, EditorSelection} from "@codemirror/state"
-import {EditorView, Decoration, DecorationSet} from "@codemirror/view"
+import {EditorView, Decoration, DecorationSet, Direction} from "@codemirror/view"
 import {ConflictWidget} from "./widgets"
 
 export class ConflictSide {
@@ -178,12 +178,18 @@ function focusConflict(view: EditorView, pos: number) {
   ;(dom.firstChild as HTMLElement).focus()
 }
 
-function moveToConflict(view: EditorView, forward: boolean) {
+function moveToConflict(view: EditorView, forward: boolean, vertical: boolean) {
+  let {main} = view.state.selection
+  if (!main.empty) return false
   let field = view.state.field(conflicts, false)
   if (!field || !field.size) return false
-  let {main} = view.state.selection
-  let line = view.state.doc.lineAt(main.head), next = view.moveVertically(main, forward)
-  if (next.head >= line.from && next.head <= line.to) return false
+  let line = view.state.doc.lineAt(main.head)
+  if (vertical) {
+    let next = view.moveVertically(main, forward)
+    if (next.head >= line.from && next.head <= line.to) return false
+  } else {
+    if (main.head - line.from != (forward ? line.text.length : 0)) return false
+  }
   let pos = forward ? line.to + 1 : line.from - 1, hasConflict = -1
   field.between(pos, pos, from => {hasConflict = from})
   if (hasConflict < 0) return false
@@ -192,9 +198,17 @@ function moveToConflict(view: EditorView, forward: boolean) {
 }
 
 export function moveDownToConflict(view: EditorView) {
-  return moveToConflict(view, true)
+  return moveToConflict(view, true, true)
 }
 
 export function moveUpToConflict(view: EditorView) {
-  return moveToConflict(view, false)
+  return moveToConflict(view, false, true)
+}
+
+export function moveLeftToConflict(view: EditorView) {
+  return moveToConflict(view, view.textDirection != Direction.LTR, false)
+}
+
+export function moveRightToConflict(view: EditorView) {
+  return moveToConflict(view, view.textDirection == Direction.LTR, false)
 }
